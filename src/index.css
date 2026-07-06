@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CivicPulse Design Tokens — Futuristic Civic-Tech
+   Signature motif: the "civic radar" — a rotating sweep + grid
+   that ties the GPS locator, live dashboard and ambient scenes
+   into one visual language (citizens as blips on a shared map).
+   ============================================================ */
+@theme {
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Base surfaces */
+  --color-void: #05080e;
+  --color-base: #070c16;
+  --color-surface: #0c1420;
+  --color-surface-2: #101a29;
+  --color-border-soft: rgba(148, 178, 199, 0.14);
+  --color-border-strong: rgba(148, 178, 199, 0.28);
+
+  /* Accents */
+  --color-emerald: #16e9a6;
+  --color-emerald-soft: #16e9a633;
+  --color-cyan: #29d3f5;
+  --color-cyan-soft: #29d3f533;
+  --color-amber: #fbbf3f;
+  --color-rose: #fb5b7b;
+  --color-violet: #9b8cfb;
+
+  /* Text */
+  --color-ink: #eaf3f7;
+  --color-ink-muted: #dce7ef;
+  --color-ink-faint: #c4d2de;
+
+  --shadow-glow-emerald: 0 0 24px 0 rgba(22, 233, 166, 0.35);
+  --shadow-glow-cyan: 0 0 24px 0 rgba(41, 211, 245, 0.35);
+
+  --animate-radar-spin: radar-spin 4s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.2s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+  --animate-scan: scan-move 3.2s ease-in-out infinite;
+  --animate-float: float-y 6s ease-in-out infinite;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border-soft);
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(22, 233, 166, 0.08), transparent 40%),
+      radial-gradient(circle at 88% 18%, rgba(41, 211, 245, 0.08), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(155, 140, 251, 0.05), transparent 50%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--color-emerald);
+    color: #04120c;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(var(--color-emerald), var(--color-cyan));
+    border-radius: 999px;
+    border: 2px solid var(--color-base);
+  }
+
+  /* Visible keyboard focus everywhere */
+  :focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .font-display { font-family: var(--font-display); }
+  .font-mono { font-family: var(--font-mono); }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--color-border-soft);
+  }
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.055);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--color-border-strong);
+  }
+
+  .text-gradient {
+    background: linear-gradient(100deg, var(--color-emerald), var(--color-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .grid-scan {
+    background-image:
+      linear-gradient(rgba(148, 178, 199, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 178, 199, 0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+}
+
+/* ---- Signature keyframes: the civic radar ---- */
+@keyframes radar-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes scan-move {
+  0%, 100% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translateY(100%); opacity: 1; }
+  90% { opacity: 1; }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

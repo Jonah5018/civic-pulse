@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /map
+Disallow: /profile
+Disallow: /users
+
+Sitemap: https://civicpulse.org/sitemap.xml
