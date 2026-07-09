@@ -40,7 +40,7 @@ const STATUS_OPTIONS = ["pending", "in_progress", "resolved", "escalated"];
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
-  const { _profile } = useAuth();
+  const { profile } = useAuth();
 
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
     filters,
     page,
     pageSize: PAGE_SIZE,
-    scopedWards: _profile?.approved_wards,
+    scopedWards: profile?.approved_wards,
   });
 
   useEffect(() => {
@@ -398,7 +398,8 @@ function ChartTooltip({ active, payload, label }) {
 }
 
 function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusChange }) {
-  const { report: detailReport, contact, history } = content;
+  const safeContent = content ?? { report: null, contact: null, history: [] };
+  const { report: detailReport, contact, history } = safeContent;
   const activeReport = detailReport ?? report;
   const urls = activeReport?.evidence_urls ?? [];
   const [note, setNote] = useState("");
@@ -464,6 +465,12 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
         onClick={(e) => e.stopPropagation()}
         className="h-full w-full max-w-2xl overflow-y-auto bg-surface/95 p-6 shadow-2xl"
       >
+        {!activeReport ? (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-sm text-ink-muted">{t.common.loading}</p>
+          </div>
+        ) : (
+          <>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-mono text-sm text-cyan">{activeReport?.tracking_id}</p>
@@ -528,12 +535,12 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
               <p className="mt-3 text-sm text-ink-muted">{t.admin.noContactDetails}</p>
             )}
 
-            {_profile?.admin_phone && (
+            {profile?.admin_phone && (
               <div className="mt-4 border-t border-border-soft/50 pt-4">
                 <p className="text-xs uppercase tracking-wide text-ink-faint">Your Contact</p>
                 <div className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
                   <Phone className="h-3.5 w-3.5" />
-                  <span>{_profile?.admin_phone}</span>
+                  <span>{profile?.admin_phone}</span>
                 </div>
               </div>
             )}
@@ -683,6 +690,8 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
             </div>
           </div>
         </div>
+          </>
+        )}
       </motion.div>
     </motion.div>
   );
