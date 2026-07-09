@@ -151,12 +151,14 @@ export async function getReports(options = {}, signal) {
 }
 
 export async function getReportStats(signal, scopedWards) {
-  const baseQuery = supabase.from("reports");
-  const scopedQuery = scopedWards?.length ? baseQuery.in("ward", scopedWards) : baseQuery;
+  const build = () =>
+    scopedWards?.length
+      ? supabase.from("reports").in("ward", scopedWards)
+      : supabase.from("reports");
 
   const [{ count: total }, { count: resolved }] = await Promise.all([
-    scopedQuery.select("*", { count: "exact", head: true }).abortSignal(signal),
-    scopedQuery.eq("status", "resolved").select("*", { count: "exact", head: true }).abortSignal(signal),
+    build().select("*", { count: "exact", head: true }).abortSignal(signal),
+    build().eq("status", "resolved").select("*", { count: "exact", head: true }).abortSignal(signal),
   ]);
 
   return {

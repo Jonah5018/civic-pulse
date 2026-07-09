@@ -1,9 +1,11 @@
 import { useMemo, useState, useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { motion } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { getReports } from "../lib/reports";
+import { getReportCoords } from "../data/locations";
 
 const STATUS_COLORS = {
   pending: "#f59e0b",
@@ -28,17 +30,21 @@ export default function MapPage() {
     })();
   }, []);
 
-  const withCoords = useMemo(
-    () => reports.filter((r) => r.latitude != null && r.longitude != null),
+  const pinned = useMemo(
+    () =>
+      reports.map((r) => {
+        const { coords, approximate } = getReportCoords(r);
+        return { ...r, coords, approximate };
+      }),
     [reports]
   );
 
   const center = useMemo(() => {
-    if (!withCoords.length) return [6.2, 7.0];
-    const latSum = withCoords.reduce((s, r) => s + r.latitude, 0);
-    const lngSum = withCoords.reduce((s, r) => s + r.longitude, 0);
-    return [latSum / withCoords.length, lngSum / withCoords.length];
-  }, [withCoords]);
+    if (!pinned.length) return [6.2, 7.0];
+    const latSum = pinned.reduce((s, r) => s + r.coords[0], 0);
+    const lngSum = pinned.reduce((s, r) => s + r.coords[1], 0);
+    return [latSum / pinned.length, lngSum / pinned.length];
+  }, [pinned]);
 
   if (!isAuthenticated) {
     return (
@@ -66,7 +72,7 @@ export default function MapPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold sm:text-3xl">{t.admin.title}</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Live incident map — {withCoords.length} {withCoords.length === 1 ? "location" : "locations"} pinned
+            Live incident map — {pinned.length} {pinned.length === 1 ? "location" : "locations"} pinned
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-border-soft bg-surface/60 px-4 py-2.5">
@@ -92,7 +98,7 @@ export default function MapPage() {
       <div className="mt-6 h-[70vh] overflow-hidden rounded-2xl border border-border-soft">
         <MapContainer
           center={center}
-          zoom={withCoords.length ? 10 : 7}
+          zoom={pinned.length ? 10 : 7}
           scrollWheelZoom
           style={{ height: "100%", width: "100%" }}
         >
@@ -100,10 +106,10 @@ export default function MapPage() {
             attribution='&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
-      {withCoords.map((r) => (
+      {pinned.map((r) => (
         <CircleMarker
           key={r.id}
-          center={[r.latitude, r.longitude]}
+          center={r.coords}
           radius={8}
           fillColor={STATUS_COLORS[r.status] ?? "#29d3f5"}
           color={STATUS_COLORS[r.status] ?? "#29d3f5"}
@@ -119,6 +125,11 @@ export default function MapPage() {
                 {r.ward}, {r.lga}
               </p>
               <p className="text-[11px] text-ink-faint">Status: {r.status}</p>
+              {r.approximate && (
+                <p className="mt-1 text-[11px] text-amber-400">
+                  Approx. location — GPS not provided
+                </p>
+              )}
             </div>
           </Popup>
         </CircleMarker>
