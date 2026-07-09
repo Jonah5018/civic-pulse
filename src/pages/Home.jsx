@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import {
   Construction,
@@ -25,6 +26,7 @@ import {
 import FloatingField from "../components/FloatingField";
 import GPSButton from "../components/GPSButton";
 import FileDropzone from "../components/FileDropzone";
+import PermissionHelpModal from "../components/PermissionHelpModal";
 import RadarField from "../components/RadarField";
 import { StatusPill } from "../components/StatusPill";
 import { useLanguage } from "../context/LanguageContext";
@@ -68,6 +70,7 @@ const EMPTY_FORM = {
 export default function Home() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY_FORM);
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -85,6 +88,7 @@ export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speechError, setSpeechError] = useState("");
+  const [permHelp, setPermHelp] = useState(null); // null | "microphone"
   const [voiceLanguage, setVoiceLanguage] = useState("auto");
 
   const lgas = form.state ? LGAS_BY_STATE[form.state] : [];
@@ -131,6 +135,10 @@ export default function Home() {
       toast.error(t.toast.reportError);
       return;
     }
+    if (!user) {
+      navigate("/signup", { state: { from: "/" } });
+      return;
+    }
     setSubmitting(true);
     try {
       const data = await submitReport(form, files, user?.id);
@@ -172,7 +180,7 @@ export default function Home() {
       }
     } catch {
       setIsListening(false);
-      setSpeechError(t.home.voicePermissionDenied);
+      setPermHelp("microphone");
       return;
     }
 
@@ -206,7 +214,11 @@ export default function Home() {
           return;
         }
 
-        setSpeechError(isPermissionIssue ? t.home.voicePermissionDenied : t.home.voiceError);
+        if (isPermissionIssue) {
+          setPermHelp("microphone");
+        } else {
+          setSpeechError(t.home.voiceError);
+        }
         setIsListening(false);
       };
 
@@ -614,6 +626,12 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      <PermissionHelpModal
+        open={permHelp === "microphone"}
+        onClose={() => setPermHelp(null)}
+        type="microphone"
+      />
     </div>
   );
 }

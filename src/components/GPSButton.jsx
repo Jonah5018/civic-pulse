@@ -4,6 +4,7 @@ import { LocateFixed, CheckCircle2, AlertCircle } from "lucide-react";
 import { useLanguage } from "../context/LanguageContext";
 import { getWardsForLga } from "../lib/reports";
 import { supabase } from "../lib/supabaseClient";
+import PermissionHelpModal from "./PermissionHelpModal";
 
 /**
  * "Use my GPS location" — the signature radar-sweep interaction. Captures
@@ -14,6 +15,7 @@ export default function GPSButton({ onLocate, state: userState, lga: userLga }) 
   const { t } = useLanguage();
   const [state, setState] = useState("idle"); // idle | locating | success | error
   const [message, setMessage] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const handleClick = () => {
     if (!("geolocation" in navigator)) {
@@ -59,8 +61,14 @@ export default function GPSButton({ onLocate, state: userState, lga: userLga }) 
         onLocate?.({ latitude, longitude, placeName, matchedWard });
       },
       (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setState("error");
+          setMessage("");
+          setHelpOpen(true);
+          return;
+        }
         setState("error");
-        setMessage(error.code === error.PERMISSION_DENIED ? t.home.gpsDenied : t.home.gpsUnsupported);
+        setMessage(t.home.gpsUnsupported);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -113,17 +121,29 @@ export default function GPSButton({ onLocate, state: userState, lga: userLga }) 
       </motion.button>
 
       <AnimatePresence>
-        {message && state === "error" && (
-          <motion.p
+        {state === "error" && (
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="mt-2 text-xs text-rose"
+            className="mt-2"
           >
-            {message}
-          </motion.p>
+            {message ? (
+              <p className="text-xs text-ink-faint">{message}</p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="text-xs text-cyan underline-offset-2 hover:underline"
+              >
+                {t.home.permissionFixLink}
+              </button>
+            )}
+          </motion.div>
         )}
       </AnimatePresence>
+
+      <PermissionHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} type="location" />
     </div>
   );
 }

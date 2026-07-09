@@ -79,6 +79,20 @@ export const translations = {
       gpsFound: "Location captured",
       gpsDenied: "Location access was denied — you can still fill this in manually.",
       gpsUnsupported: "GPS isn't available on this device.",
+      permissionFixLink: "How to enable this permission",
+      permissionGotIt: "Got it",
+      permissionHelp: {
+        location: {
+          title: "Location access is blocked",
+          body: "CivicPulse can't read your location. To turn it back on, tap the site icon (the lock 🔒 or location 📍 symbol) on the left of your browser's address bar, set Location to “Allow”, then reload the page.",
+          fallback: "You don't need GPS — just choose your State, LGA and Ward from the dropdowns above. Your report will submit fine without a precise pin.",
+        },
+        microphone: {
+          title: "Microphone access is blocked",
+          body: "CivicPulse can't use your microphone. To turn it back on, tap the site icon (the lock 🔒 or microphone 🎤 symbol) on the left of your browser's address bar, set Microphone to “Allow”, then reload the page.",
+          fallback: "You don't need voice — just type your description directly into the box above. Everything else works exactly the same.",
+        },
+      },
       evidenceTitle: "Add evidence (optional)",
       evidenceDrop: "Drag photos or videos here, or click to browse",
       evidenceHint: "JPG, PNG or MP4, up to 25MB each",
@@ -293,6 +307,20 @@ export const translations = {
       gpsFound: "Enwetala ebe ị nọ",
       gpsDenied: "Ekweghị ka enweta ebe ị nọ — ị ka nwere ike ide ya n'aka gị.",
       gpsUnsupported: "GPS adịghị na ngwaọrụ a.",
+      permissionFixLink: "Otu esi mee ka ikike a rụọ ọrụ",
+      permissionGotIt: "Aghọtala",
+      permissionHelp: {
+        location: {
+          title: "Egbochiri iji ebe ị nọ",
+          body: "CivicPulse enweghị ike ịgụ ebe ị nọ. Iji mee ka ọ rụọ ọrụ ọzọ, pịa akara saịtị (mkpuchi 🔒 ma ọ bụ 📍) dị n'akụkụ ekpe nke ụzọ adreesị braụza gị, debe Ebe ka “Kwe”, wee megharịa ibe ahụ.",
+          fallback: "Ị chọghị GPS — naanị họrọ Steeti, Ọzụzụ Ọchịchị Mpaghara na Wadi site na ndọpụ dị n'elu. A ga-ezipu nkpesa gị n'agbanyeghị na enweghị pin ziri ezi.",
+        },
+        microphone: {
+          title: "Egbochiri iji igwe okwu",
+          body: "CivicPulse enweghị ike iji igwe okwu gị. Iji mee ka ọ rụọ ọrụ ọzọ, pịa akara saịtị (mkpuchi 🔒 ma ọ bụ 🎤) dị n'akụkụ ekpe nke ụzọ adreesị braụza gị, debe Igwe Okwu ka “Kwe”, wee megharịa ibe ahụ.",
+          fallback: "Ị chọghị olu — naanị debe nkọwa gị ozugbo n'ime igbe dị n'elu. Ihe ndị ọzọ niile na-arụ otu ụdị ahụ.",
+        },
+      },
       evidenceTitle: "Tinye akaebe (ọ bụghị mkpa)",
       evidenceDrop: "Dọkpụrụ foto ma ọ bụ vidiyo tinye ebe a, ma ọ bụ pịa ịchọ faịlụ",
       evidenceHint: "JPG, PNG ma ọ bụ MP4, ruo 25MB nke ọ bụla",
