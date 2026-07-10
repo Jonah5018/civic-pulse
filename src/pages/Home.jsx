@@ -178,9 +178,13 @@ export default function Home() {
       if (navigator.mediaDevices?.getUserMedia) {
         await navigator.mediaDevices.getUserMedia({ audio: true });
       }
-    } catch {
+    } catch (err) {
       setIsListening(false);
-      setPermHelp("microphone");
+      if (err?.name === "NotAllowedError") {
+        setPermHelp("microphone");
+      } else {
+        setSpeechError(t.home.voiceError);
+      }
       return;
     }
 

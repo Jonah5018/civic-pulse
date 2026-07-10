@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 
 import MetricCard from "../components/MetricCard";
+import Spinner from "../components/Spinner";
 import { StatusPill, PriorityBadge } from "../components/StatusPill";
 import { TableRowSkeleton, ChartSkeleton } from "../components/Skeletons";
 import { useLanguage } from "../context/LanguageContext";
@@ -373,7 +374,7 @@ export default function AdminDashboard() {
           <EvidenceModal report={evidenceReport} t={t} onClose={() => setEvidenceReport(null)} />
         )}
         {detailReport && (
-          <ReportDetailDrawer
+          <ReportDetails
             report={detailReport}
             content={detailContent}
             loading={detailLoading}
@@ -397,7 +398,7 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusChange }) {
+function ReportDetails({ report, content, loading, t, onClose, _onStatusChange }) {
   const safeContent = content ?? { report: null, contact: null, history: [] };
   const { report: detailReport, contact, history } = safeContent;
   const activeReport = detailReport ?? report;
@@ -465,9 +466,9 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
         onClick={(e) => e.stopPropagation()}
         className="h-full w-full max-w-2xl overflow-y-auto bg-surface/95 p-6 shadow-2xl"
       >
-        {!activeReport ? (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-ink-muted">{t.common.loading}</p>
+        {!activeReport || loading ? (
+          <div className="flex h-full items-center justify-center p-6">
+            <Spinner />
           </div>
         ) : (
           <>
@@ -519,7 +520,9 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
               <p className="text-sm font-medium text-ink">{t.admin.contactDetails}</p>
             </div>
             {loading ? (
-              <p className="mt-3 text-sm text-ink-muted">{t.common.loading}</p>
+              <div className="mt-3 flex items-center">
+                <Spinner size={20} />
+              </div>
             ) : contact ? (
               <div className="mt-3 space-y-3 text-sm text-ink-muted">
                 <div className="flex items-center gap-2">
@@ -635,7 +638,7 @@ function ReportDetailDrawer({ report, content, loading, t, onClose, _onStatusCha
             {activeReport?.admin_note && (
               <div className="mt-3 rounded-xl border border-border-soft bg-surface/70 p-3">
                 <p className="text-xs uppercase tracking-wide text-ink-faint">Current Note</p>
-                <p className="mt-1 text-sm text-ink">{activeReport.admin_note}</p>
+                <p className="mt-1 text-sm text-ink">{activeReport?.admin_note}</p>
               </div>
             )}
           </div>
