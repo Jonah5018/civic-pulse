@@ -151,20 +151,24 @@ export async function getReports(options = {}, signal) {
 }
 
 export async function getReportStats(signal, scopedWards) {
-  const build = () =>
+  const base = () =>
     scopedWards?.length
-      ? supabase.from("reports").in("ward", scopedWards)
-      : supabase.from("reports");
+      ? supabase.from("reports").in("ward", scopedWards).select("id", { count: "exact" })
+      : supabase.from("reports").select("id", { count: "exact" });
 
-  const [{ count: total }, { count: resolved }] = await Promise.all([
-    build().select("*", { count: "exact", head: true }).abortSignal(signal),
-    build().eq("status", "resolved").select("*", { count: "exact", head: true }).abortSignal(signal),
+  const run = (q) => (signal ? q.abortSignal(signal) : q);
+
+  // Use allSettled (not all) so a single failing query can never reject the
+  // whole call — otherwise the UI would be stuck on its blank loading state.
+  const [totalRes, resolvedRes] = await Promise.allSettled([
+    run(base()),
+    run(base().eq("status", "resolved")),
   ]);
 
-  return {
-    total: total ?? 0,
-    resolved: resolved ?? 0,
-  };
+  const total = totalRes.status === "fulfilled" ? totalRes.value?.count ?? 0 : 0;
+  const resolved = resolvedRes.status === "fulfilled" ? resolvedRes.value?.count ?? 0 : 0;
+
+  return { total, resolved };
 }
 
 export async function getReportByTrackingId(trackingId) {

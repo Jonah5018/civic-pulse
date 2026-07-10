@@ -99,7 +99,7 @@ export default function Home() {
         const nextStats = await getReportStats();
         setStats(nextStats);
       } catch {
-        setStats({ total: null, resolved: null });
+        setStats({ total: 0, resolved: 0 });
       }
     })();
   }, []);
