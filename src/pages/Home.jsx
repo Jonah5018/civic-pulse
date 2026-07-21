@@ -326,7 +326,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mx-auto mt-4 max-w-2xl text-center text-balance text-sm text-slate-200 sm:text-base md:text-lg"
+            className="mx-auto mt-4 max-w-2xl text-center text-balance text-sm text-slate-200 md:text-lg"
           >
             {t.home.subtitle}
           </motion.p>
