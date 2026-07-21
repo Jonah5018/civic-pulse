@@ -107,6 +107,9 @@ export default function Navbar() {
                   <NavLink to="/dashboard" className={linkClasses} onClick={() => setOpen(false)}>
                     <LayoutDashboard className="h-4 w-4" /> {t.nav.dashboard}
                   </NavLink>
+                  <NavLink to="/map" className={linkClasses} onClick={() => setOpen(false)}>
+                    <Map className="h-4 w-4" /> Incident Map
+                  </NavLink>
                 </>
               )}
               <div className="my-1 border-t border-border-soft/70" />

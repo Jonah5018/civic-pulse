@@ -158,86 +158,126 @@ export default function Home() {
     setResult(null);
   };
 
-  const toggleVoiceInput = async () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setSpeechError(t.home.voiceUnsupported);
-      return;
-    }
-
-    if (isListening) {
-      setIsListening(false);
-      window.__civicPulseRecognition?.stop?.();
-      return;
-    }
-
-    setSpeechError("");
-    setIsListening(true);
-
-    try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
+    const toggleVoiceInput = async () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setSpeechError(t.home.voiceUnsupported);
+        return;
       }
-    } catch (err) {
-      setIsListening(false);
-      if (err?.name === "NotAllowedError") {
-        setPermHelp("microphone");
-      } else {
-        setSpeechError(t.home.voiceError);
+
+      if (isListening) {
+        setIsListening(false);
+        clearTimeout(window.__civicPulseRestartTimer);
+        window.__civicPulseRecognition?.stop?.();
+        return;
       }
-      return;
-    }
 
-    const preferredLanguages =
-      voiceLanguage === "ig" ? ["ig-NG"] : voiceLanguage === "en" ? ["en-US"] : ["en-US", "ig-NG"];
+      setSpeechError("");
+      setIsListening(true);
 
-    const startRecognition = (language, attemptIndex) => {
-      const recognition = new SpeechRecognition();
-      recognition.lang = language;
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((result) => result[0].transcript)
-          .join(" ")
-          .trim();
-
-        if (transcript) {
-          setForm((prev) => ({
-            ...prev,
-            description: `${prev.description}${prev.description ? " " : ""}${transcript}`.trim(),
-          }));
+      try {
+        if (navigator.mediaDevices?.getUserMedia) {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
         }
-      };
-
-      recognition.onerror = (event) => {
-        const isPermissionIssue = event.error === "not-allowed" || event.error === "audio-capture";
-        if (!isPermissionIssue && attemptIndex < preferredLanguages.length - 1) {
-          startRecognition(preferredLanguages[attemptIndex + 1], attemptIndex + 1);
-          return;
-        }
-
-        if (isPermissionIssue) {
+      } catch (err) {
+        setIsListening(false);
+        if (err?.name === "NotAllowedError") {
           setPermHelp("microphone");
         } else {
           setSpeechError(t.home.voiceError);
         }
-        setIsListening(false);
-      };
+        return;
+      }
 
-      recognition.onend = () => {
-        if (window.__civicPulseRecognition === recognition) {
+      const preferredLanguages =
+        voiceLanguage === "ig" ? ["ig-NG"] : voiceLanguage === "en" ? ["en-US"] : ["en-US", "ig-NG"];
+
+      const startRecognition = (language, attemptIndex) => {
+        const recognition = new SpeechRecognition();
+        recognition.lang = language;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        let lastProcessedIndex = -1;
+        let silenceTimer = null;
+        const SILENCE_MS = 8000;
+
+        const resetSilenceTimer = () => {
+          clearTimeout(silenceTimer);
+          silenceTimer = setTimeout(() => {
+            try {
+              recognition.stop();
+            } catch {
+              // already stopped
+            }
+          }, SILENCE_MS);
+        };
+
+        recognition.onresult = (event) => {
+          resetSilenceTimer();
+
+          for (let i = lastProcessedIndex + 1; i < event.results.length; i++) {
+            if (!event.results[i].isFinal) continue;
+            const chunk = event.results[i][0].transcript.trim();
+            if (!chunk) continue;
+            lastProcessedIndex = i;
+            setForm((prev) => ({
+              ...prev,
+              description: prev.description
+                ? `${prev.description} ${chunk}`
+                : chunk,
+            }));
+          }
+        };
+
+        recognition.onerror = (event) => {
+          const isPermissionIssue =
+            event.error === "not-allowed" || event.error === "audio-capture";
+          const isNetworkIssue =
+            event.error === "network" || event.error === "no-speech";
+          const isFatal = event.error === "aborted";
+
+          if (!isPermissionIssue && attemptIndex < preferredLanguages.length - 1) {
+            startRecognition(preferredLanguages[attemptIndex + 1], attemptIndex + 1);
+            return;
+          }
+
+          if (isNetworkIssue && attemptIndex < preferredLanguages.length - 1) {
+            startRecognition(preferredLanguages[attemptIndex + 1], attemptIndex + 1);
+            return;
+          }
+
+          if (isPermissionIssue) {
+            setPermHelp("microphone");
+          } else if (!isFatal) {
+            setSpeechError(t.home.voiceError);
+          }
           setIsListening(false);
-        }
+          clearTimeout(silenceTimer);
+        };
+
+        recognition.onend = () => {
+          clearTimeout(silenceTimer);
+          if (window.__civicPulseRecognition !== recognition) return;
+          if (!isListening) return;
+
+          window.__civicPulseRestartTimer = setTimeout(() => {
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+            }
+          }, 300);
+        };
+
+        window.__civicPulseRecognition = recognition;
+        resetSilenceTimer();
+        recognition.start();
       };
 
-      window.__civicPulseRecognition = recognition;
-      recognition.start();
+      startRecognition(preferredLanguages[0], 0);
     };
-
-    startRecognition(preferredLanguages[0], 0);
-  };
 
   const handleTrack = async (e) => {
     e.preventDefault();
@@ -286,7 +326,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mx-auto mt-4 max-w-xl text-balance text-sm text-slate-200 sm:text-base"
+            className="mx-auto mt-4 max-w-2xl text-center text-balance text-sm text-slate-200 sm:text-base md:text-lg"
           >
             {t.home.subtitle}
           </motion.p>
@@ -309,7 +349,7 @@ export default function Home() {
         <div className="mx-auto max-w-2xl">
           <AnimatePresence mode="wait">
             {result ? (
-              <SuccessCard key="success" result={result} t={t} onReset={resetForm} />
+              <SuccessCard key="success" result={result} t={t} onReset={resetForm} getReportByTrackingId={getReportByTrackingId} />
             ) : (
               <motion.form
                 key="form"
@@ -656,13 +696,32 @@ function StatChip({ value, label, accent }) {
   );
 }
 
-function SuccessCard({ result, t, onReset }) {
+function SuccessCard({ result, t, onReset, getReportByTrackingId }) {
   const [copied, setCopied] = useState(false);
+  const [trackId, setTrackId] = useState("");
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackResult, setTrackResult] = useState(undefined);
+
   const copy = () => {
     navigator.clipboard.writeText(result.tracking_id);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+
+  const handleTrack = async (e) => {
+    e.preventDefault();
+    if (!trackId.trim()) return;
+    setTrackLoading(true);
+    try {
+      const data = await getReportByTrackingId(trackId.trim());
+      setTrackResult(data ?? null);
+    } catch {
+      setTrackResult(null);
+    } finally {
+      setTrackLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -691,9 +750,58 @@ function SuccessCard({ result, t, onReset }) {
 
       <p className="mt-3 text-xs text-ink-faint">{t.home.successHint}</p>
 
+      <form onSubmit={handleTrack} className="mx-auto mt-6 flex max-w-md flex-col gap-2 sm:flex-row">
+        <input
+          type="text"
+          value={trackId}
+          onChange={(e) => setTrackId(e.target.value)}
+          placeholder={t.home.trackPlaceholder}
+          className="flex-1 rounded-xl border border-border-soft bg-surface/70 px-4 py-2.5 text-sm font-mono text-ink outline-none placeholder:text-ink-faint"
+        />
+        <button
+          type="submit"
+          disabled={trackLoading}
+          className="rounded-xl border border-cyan/30 bg-cyan-soft/30 px-4 py-2.5 text-sm font-medium text-cyan transition-colors hover:border-cyan/60 disabled:opacity-70"
+        >
+          {trackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.home.trackButton}
+        </button>
+      </form>
+
+      {trackResult === null && (
+        <p className="mx-auto mt-3 text-xs text-rose">{t.home.trackNotFound}</p>
+      )}
+
+      {trackResult && (
+        <div className="mx-auto mt-4 max-w-md rounded-xl border border-border-soft bg-surface/60 p-4 text-left">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-sm text-cyan">{trackResult.tracking_id}</span>
+            <StatusPill status={trackResult.status} />
+          </div>
+          <p className="mt-2 text-sm text-ink">{t.categories[trackResult.category] ?? trackResult.category}</p>
+          <p className="text-xs text-ink-faint">
+            {trackResult.ward}, {trackResult.lga}, {trackResult.state}
+          </p>
+          {trackResult.admin_note && (
+            <div className="mt-3 rounded-lg border border-border-soft bg-surface/80 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Admin Update</p>
+              <p className="mt-1 text-sm text-ink">{trackResult.admin_note}</p>
+            </div>
+          )}
+          {trackResult.evidence_urls?.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {trackResult.evidence_urls.map((url, idx) => (
+                <a key={idx} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-border-soft">
+                  <img src={url} alt={`Evidence ${idx + 1}`} className="h-20 w-full object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         onClick={onReset}
-        className="mt-6 rounded-xl border border-border-soft px-5 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:border-border-strong hover:text-ink"
+        className="mx-auto mt-6 rounded-xl border border-border-soft px-5 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:border-border-strong hover:text-ink"
       >
         {t.home.reportAnother}
       </button>
