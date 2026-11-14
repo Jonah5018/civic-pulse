@@ -199,7 +199,7 @@ export default function Home() {
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
-        let lastProcessedIndex = -1;
+        const descriptionBase = form.description.trim();
         let silenceTimer = null;
         const SILENCE_MS = 8000;
 
@@ -216,19 +216,12 @@ export default function Home() {
 
         recognition.onresult = (event) => {
           resetSilenceTimer();
-
-          for (let i = lastProcessedIndex + 1; i < event.results.length; i++) {
-            if (!event.results[i].isFinal) continue;
-            const chunk = event.results[i][0].transcript.trim();
-            if (!chunk) continue;
-            lastProcessedIndex = i;
-            setForm((prev) => ({
-              ...prev,
-              description: prev.description
-                ? `${prev.description} ${chunk}`
-                : chunk,
-            }));
-          }
+          const recognizedText = Array.from(event.results)
+            .map((result) => result[0]?.transcript?.trim() ?? "")
+            .filter(Boolean)
+            .join(" ");
+          const description = [descriptionBase, recognizedText].filter(Boolean).join(" ");
+          setForm((prev) => ({ ...prev, description }));
         };
 
         recognition.onerror = (event) => {

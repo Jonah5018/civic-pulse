@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+.dark-map-tiles {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
 /* ============================================================
    CivicPulse Design Tokens — Futuristic Civic-Tech
    Signature motif: the "civic radar" — a rotating sweep + grid
