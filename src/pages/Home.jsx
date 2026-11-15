@@ -53,6 +53,31 @@ const PRIORITY_DOT = {
   critical: "bg-rose",
 };
 
+const TRIAGE_RULES = [
+  { category: "road", terms: ["road", "ụzọ", "pothole", "bridge", "gully", "culvert"], agency: "State Ministry of Works" },
+  { category: "power", terms: ["power", "ọkụ", "transformer", "pole", "electricity", "blackout"], agency: "EEDC Rapid Response Team" },
+  { category: "water", terms: ["water", "mmiri", "borehole", "pipe", "tap", "leak"], agency: "RUWASSA / Water Board" },
+  { category: "waste", terms: ["waste", "ahịhịa", "refuse", "dump", "garbage", "drain"], agency: "ASEPA / Environmental Agency" },
+  { category: "security", terms: ["security", "egwu", "crime", "robbery", "attack", "violence"], agency: "Local Security Response / Police" },
+  { category: "education", terms: ["school", "ụlọ akwụkwọ", "classroom", "teacher", "student"], agency: "State Ministry of Education" },
+  { category: "health", terms: ["hospital", "ụlọ ọgwụ", "clinic", "health", "medical"], agency: "State Ministry of Health / Emergency Services" },
+  { category: "other", terms: ["fire", "collapse", "collapsed", "flood", "flooding", "explosion"], agency: "State Fire Service / Emergency Management Agency" },
+];
+
+function analyzeDescription(description) {
+  const text = description.toLocaleLowerCase();
+  const matches = TRIAGE_RULES.filter((rule) => rule.terms.some((term) => text.includes(term)));
+  const category = matches[0]?.category ?? "";
+  const critical = ["fire", "ọkụ ọkụ", "collapse", "collapsed", "flood", "flooding", "trapped", "explosion", "electrocut", "fatal", "death"].some((term) => text.includes(term));
+  const high = critical || ["outage", "blackout", "burst", "overflow", "unsafe", "injury", "injured", "threat", "attack", "danger"].some((term) => text.includes(term));
+  const urgency = critical ? "CRITICAL PRIORITY" : high ? "HIGH PRIORITY" : "STANDARD";
+  const agency = critical
+    ? "State Emergency Management / Fire & Rescue"
+    : matches.find((rule) => rule.category === category)?.agency ?? "Local Government Works Dept";
+  const impact = critical ? "Immediate risk to life and public safety" : high ? "Disruption affecting nearby residents" : category ? "Localized community service impact" : "Awaiting more details for an impact estimate";
+  return { category, urgency, agency, impact };
+}
+
 const EMPTY_FORM = {
   category: "",
   description: "",
@@ -287,6 +312,7 @@ export default function Home() {
   };
 
   const categoryKeys = useMemo(() => Object.keys(CATEGORY_ICONS), []);
+  const triage = useMemo(() => analyzeDescription(form.description), [form.description]);
 
   return (
     <div className="relative">
@@ -372,6 +398,8 @@ export default function Home() {
                           className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-[11px] font-medium transition-all ${
                             active
                               ? "border-emerald/50 bg-emerald-soft/30 text-emerald shadow-[0_0_16px_rgba(22,233,166,0.25)]"
+                            : triage.category === key
+                              ? "border-cyan/50 bg-cyan-soft/20 text-cyan shadow-[0_0_16px_rgba(41,211,245,0.16)]"
                               : "border-border-soft bg-surface/40 text-ink-muted hover:border-border-strong"
                           }`}
                         >
@@ -393,6 +421,24 @@ export default function Home() {
                     rows={3}
                     required
                   />
+                  {form.description.trim() && (
+                    <div className="mt-3 rounded-2xl border border-cyan/25 bg-surface/70 p-4 shadow-[0_0_28px_-16px_rgba(41,211,245,0.45)]" aria-live="polite">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan">
+                          <Zap className="h-3.5 w-3.5" /> CivicPulse AI Triage
+                        </p>
+                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wide ${triage.urgency === "CRITICAL PRIORITY" ? "border-rose/40 bg-rose/10 text-rose" : triage.urgency === "HIGH PRIORITY" ? "border-amber/40 bg-amber/10 text-amber" : "border-emerald/30 bg-emerald/10 text-emerald"}`}>
+                          {triage.urgency}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                        <div><p className="text-[10px] uppercase tracking-wide text-ink-faint">Estimated public impact</p><p className="mt-1 text-ink-muted">{triage.impact}</p></div>
+                        <div><p className="text-[10px] uppercase tracking-wide text-ink-faint">Recommended response</p><p className="mt-1 font-medium text-ink-muted">{triage.agency}</p></div>
+                      </div>
+                      {triage.category && <p className="mt-3 text-[10px] text-cyan">Suggested category: {t.categories[triage.category] ?? triage.category} · select the highlighted card to apply</p>}
+                      <p className="mt-3 border-t border-border-soft pt-2 text-[10px] text-ink-faint">On-device keyword guidance · review before dispatch</p>
+                    </div>
+                  )}
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <button
                       type="button"

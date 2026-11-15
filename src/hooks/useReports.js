@@ -128,15 +128,16 @@ export function useReports(options = {}) {
 }
 
 export function exportReportsToCsv(reports) {
-  const headers = ["Tracking ID", "Category", "Priority", "Status", "State", "LGA", "Ward", "Reported At"];
+  const headers = ["ID", "Category", "State", "LGA", "Ward", "Status", "Latitude", "Longitude", "Date"];
   const rows = reports.map((r) => [
     r.tracking_id,
     r.category,
-    r.priority,
-    r.status,
     r.state,
     r.lga,
     r.ward,
+    r.status,
+    r.latitude,
+    r.longitude,
     new Date(r.created_at).toISOString(),
   ]);
 
@@ -148,7 +149,8 @@ export function exportReportsToCsv(reports) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `civicpulse-reports-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.download = `civicpulse-sitrep-${new Date().toISOString().slice(0, 10)}.csv`;
   link.click();
+  link.remove();
   URL.revokeObjectURL(url);
 }

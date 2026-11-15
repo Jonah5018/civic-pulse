@@ -34,7 +34,7 @@ import { TableRowSkeleton, ChartSkeleton } from "../components/Skeletons";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { useReports, exportReportsToCsv } from "../hooks/useReports";
-import { getReportDetail, updateReportStatus, updateAdminNote, getAuditLogForReport, logAdminAction } from "../lib/reports";
+import { getReportDetail, getReports, updateReportStatus, updateAdminNote, getAuditLogForReport, logAdminAction } from "../lib/reports";
 import { STATES } from "../data/locations";
 
 const STATUS_OPTIONS = ["pending", "in_progress", "resolved", "escalated"];
@@ -159,9 +159,21 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExport = () => {
-    exportReportsToCsv(reports);
-    toast.success(t.toast.csvExported);
+  const handleExport = async () => {
+    try {
+      const allFilteredReports = [];
+      const batchSize = 500;
+      for (let offset = 0; ; offset += batchSize) {
+        const batch = await getReports({ ...filters, limit: batchSize, offset, scopedWards: profile?.approved_wards });
+        allFilteredReports.push(...batch);
+        if (batch.length < batchSize) break;
+      }
+      exportReportsToCsv(allFilteredReports);
+      toast.success(`${t.toast.csvExported} (${allFilteredReports.length})`);
+    } catch (error) {
+      console.error("[AdminDashboard] CSV export failed:", error);
+      toast.error(t.toast.reportError);
+    }
   };
 
   return (
@@ -185,7 +197,7 @@ export default function AdminDashboard() {
           onClick={handleExport}
           className="flex items-center gap-2 rounded-xl border border-border-soft bg-surface/60 px-4 py-2.5 text-sm font-medium text-ink-muted transition-colors hover:border-border-strong hover:text-ink"
         >
-          <Download className="h-4 w-4" /> {t.admin.exportCsv}
+          <Download className="h-4 w-4" /> Export SITREP (CSV)
         </button>
       </div>
 
